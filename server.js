@@ -3,27 +3,20 @@ const bodyParser=require('body-parser');
 const bcrypt=require('bcrypt-nodejs');
 const cors=require('cors');
 const app= express();
+var knex = require('knex');
+const db=knex({
+    client: 'pg',
+    connection: {
+      host : '127.0.0.1',
+      user : 'postgres',
+      password : 'p000000',
+      database : 'smart-brains'
+    }
+  });
+ db.select('*').table('users').then(data=>{console.log(data)});
 app.use(bodyParser.json());
 app.use(cors());
-const database={
-    users:[
-        {
-    id:'123',
-    name:'Jhon',
-    email:'Jhon@gmail.com',
-    password:'cookies',
-    entries:0,
-    joined:new Date()
-},
-{
-    id:'1234',
-    name:'Sally',
-    email:'sally@gmail.com',
-    password:'bananas',
-    entries:0,
-    joined:new Date()
-}]}
- 
+
 app.get('/',(req,res)=>{
 res.send(database.users);
 })   
@@ -40,11 +33,11 @@ app.post('/Signin',(req,res)=>{
     {
        
         res.json(database.users[0]);
-        console.log('done'); 
+      
 
     }else{
         res.status(400).json('Error');
-        console.log('not done');
+      
     }
     
 })
@@ -54,15 +47,17 @@ app.post('/Register',(req,res)=>{
     bcrypt.hash(password, null, null, function(err, hash) {
        console.log(hash);//Store hash in your password DB.
         });
-    database.users.push({
-        id:'1235',
-        name:name,
-        email:email,
-        password:password,
-        entries:0,
-        joined:new Date()
-    })
-    res.json(database.users[database.users.length-1]);
+    db('users').returning('*')
+    .insert(
+        {
+            email:email,
+            name:name,
+            joined:new Date()
+        }
+    ).then(user=>{
+        res.json(user[0]);
+    }).catch(err=>res.status(400).json('unable to connent'))
+   // res.json(database.users[database.users.length-1]);
 })
 app.put('/profile/:id',(req,res)=>{
     const {id}=req.params;
@@ -98,8 +93,8 @@ app.put('/image',(req,res)=>{
         res.status(400).json('no such data');
     };
 })
-app.listen(3000,()=>{
-    //console.log('hello');
+app.listen(3001,()=>{
+   
 });
 
 
